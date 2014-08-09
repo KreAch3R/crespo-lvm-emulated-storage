@@ -10,6 +10,11 @@ on init
     export ANDROID_ROOT /system
     export ANDROID_DATA /data
     export EXTERNAL_STORAGE /sdcard
+        
+# LVM: Wait for mmc block devices to become available, then set up LVM volumes
+    wait /dev/block/mmcblk0
+    start lvm_vgscan
+    start lvm_vgchange
 
     mkdir /boot
     mkdir /recovery
@@ -37,6 +42,17 @@ on boot
     domainname localdomain
 
     class_start default
+
+# LVM services
+# Scan for LVM physical volumes and set up volume groups
+service lvm_vgscan /lvm/sbin/lvm vgscan --mknodes --ignorelockingfailure
+    disabled
+    oneshot
+
+# Activate LVM logical volumes in found volume groups
+service lvm_vgchange /lvm/sbin/lvm vgchange -aly --ignorelockingfailure
+    disabled
+    oneshot
 
 on property:sys.powerctl=*
    powerctl ${sys.powerctl}
